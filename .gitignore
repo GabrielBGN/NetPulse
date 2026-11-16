@@ -5,3 +5,12 @@ __pycache__/
 .env
 data/*.jsonl
 data/checkpoints/
+backups/
+# Airflow runtime files
+airflow/logs/
+
+# Database backups
+backups/
+
+# Spark checkpoints
+data/checkpoints/

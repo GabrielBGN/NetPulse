@@ -1,15 +1,19 @@
 
 import os
+
 import psycopg
 
 
 def get_connection():
-    """Create a connection to the NetPulse database."""
+    """
+    Create a PostgreSQL connection using environment variables.
 
+    Defaults target the local Docker PostgreSQL instance.
+    """
     return psycopg.connect(
-        dbname=os.getenv("NETPULSE_DB_NAME", "netpulse"),
-        user=os.getenv("NETPULSE_DB_USER") or None,
-        host=os.getenv("NETPULSE_DB_HOST", "localhost"),
-        port=int(os.getenv("NETPULSE_DB_PORT", "5432")),
-        password=os.getenv("NETPULSE_DB_PASSWORD") or None,
+        host=os.getenv("DB_HOST", "127.0.0.1"),
+        port=int(os.getenv("DB_PORT", "5433")),
+        dbname=os.getenv("DB_NAME", "netpulse"),
+        user=os.getenv("DB_USER", "netpulse"),
+        password=os.getenv("DB_PASSWORD", ""),
     )
