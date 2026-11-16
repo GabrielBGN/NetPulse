@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from src.processing.anomaly_detector import detect_anomalies
 from datetime import datetime, timezone
-
+from src.database.ingest import insert_telemetry
 
 DEVICES = [
     {
@@ -83,19 +83,32 @@ if __name__ == "__main__":
     try:
         with output_path.open("a") as file:
 
+            
             while True:
-
                 for device in DEVICES:
                     telemetry = generate_telemetry(device)
+
+                    # Detect network anomalies
                     telemetry["anomalies"] = detect_anomalies(telemetry)
+
+                    # Convert telemetry to JSON
                     json_event = json.dumps(telemetry)
 
+                    # Save telemetry to JSONL
                     print(json_event)
-
                     file.write(json_event + "\n")
                     file.flush()
 
+                    # Save telemetry and anomalies to PostgreSQL
+                    try:
+                        telemetry_id = insert_telemetry(telemetry)
+                        print(f"Saved to PostgreSQL: telemetry_id={telemetry_id}")
+
+                    except Exception as error:
+                        print(f"Database insertion failed: {error}")
+
                 time.sleep(5)
+
 
     except KeyboardInterrupt:
         print("\nNetPulse Telemetry Generator Stopped")
