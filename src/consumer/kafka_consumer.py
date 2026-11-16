@@ -1,6 +1,6 @@
 
 import json
-
+import os
 from confluent_kafka import Consumer, KafkaException
 
 from src.database.ingest import insert_telemetry
@@ -9,14 +9,18 @@ from src.database.ingest import insert_telemetry
 KAFKA_TOPIC = "network-telemetry"
 
 
+
 def create_consumer():
-    """Create a consumer connected to the Kafka broker."""
     return Consumer({
-        "bootstrap.servers": "127.0.0.1:9092",
+        "bootstrap.servers": os.getenv(
+            "KAFKA_BOOTSTRAP_SERVERS",
+            "127.0.0.1:9092",
+        ),
         "group.id": "netpulse-db-consumer",
         "auto.offset.reset": "earliest",
         "enable.auto.commit": False,
     })
+
 
 
 def consume_telemetry():
