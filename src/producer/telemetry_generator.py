@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from src.processing.anomaly_detector import detect_anomalies
 from datetime import datetime, timezone
-from src.database.ingest import insert_telemetry
+from src.producer.kafka_producer import create_producer, publish_telemetry
 
 DEVICES = [
     {
@@ -71,21 +71,27 @@ def generate_telemetry(device):
 
 
 
+
 if __name__ == "__main__":
 
     output_path = Path("data/telemetry.jsonl")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Create Kafka producer once
+    producer = create_producer()
+
     print("NetPulse Telemetry Generator Started")
     print("Saving telemetry to data/telemetry.jsonl")
+    print("Publishing telemetry to Kafka: network-telemetry")
     print("Press Ctrl+C to stop.\n")
 
     try:
         with output_path.open("a") as file:
 
-            
             while True:
                 for device in DEVICES:
+
+                    # Generate network telemetry
                     telemetry = generate_telemetry(device)
 
                     # Detect network anomalies
@@ -99,16 +105,26 @@ if __name__ == "__main__":
                     file.write(json_event + "\n")
                     file.flush()
 
-                    # Save telemetry and anomalies to PostgreSQL
+                    # Publish telemetry to Kafka
                     try:
-                        telemetry_id = insert_telemetry(telemetry)
-                        print(f"Saved to PostgreSQL: telemetry_id={telemetry_id}")
+                        publish_telemetry(producer, telemetry)
+                        print(
+                            f"Queued for Kafka: {telemetry['device_id']}"
+                        )
 
                     except Exception as error:
-                        print(f"Database insertion failed: {error}")
+                        print(f"Kafka publishing failed: {error}")
 
+                # Generate another batch every 5 seconds
                 time.sleep(5)
-
 
     except KeyboardInterrupt:
         print("\nNetPulse Telemetry Generator Stopped")
+
+    finally:
+        # Wait for pending Kafka messages to finish sending
+        print("Flushing pending Kafka messages...")
+        remaining = producer.flush(timeout=10)
+
+        print(f"Kafka messages still pending: {remaining}")
+        print("Producer shutdown complete.")
