@@ -38,6 +38,8 @@ services:
       - "127.0.0.1:5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ../sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../sql/seed_devices.sql:/docker-entrypoint-initdb.d/02-seed-devices.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U netpulse -d netpulse"]
       interval: 10s
